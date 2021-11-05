@@ -1,0 +1,50 @@
+" ALGO création de salle automatique : 
+    I- LES REGLES 
+
+            1- Doit être entourée de mur
+            
+            2- Doit avoir des portes pour aller d'une salle à l'autre
+            
+            3- Elle ne doit pas être vide MAIS elle doit avoir des particularitées
+
+    II- LES PARTICULARITES 
+
+            Pour le moment nous n'avons que 2 types de tile : - sol
+                                                              - mur
+                                                              - les tiles portes doivent être ajoutées  
+                                                              - Petites idées d'amélioration :
+                                                                        - Ajouter un principe de vision ?   
+                                                                        - Mur en verre 
+                                                                        - Vide
+                                                                        - Eau (+ lent)
+                                                                        - Flamme (dégats)
+                                                                         
+                            Différents types de salles :    -  Basique
+                                                            -  Couloir 
+                                                            -  Trou au milleu 
+                                                            -  ?Check Biding of Isaac / Moonlight /  
+
+                            
+
+
+            
+            
+            
+"
+
+
+
+AUTRE
+
+Coop
+Principe de run : mort définitive avec des paliers de difficultés
+Grande carte avec un système de vision*
+2D vu du dessus
+
+REFERENCES : FOR THE KING, MOONLIGHTER, HADES, Biding of Isaac(Il faut que j'y joue)
+
+
+
+
+
+* Système de vision : PRINCIPE DE CARTE AVEC CASES : EXAMPLE 3 CASES DE VISIONS ! SUR UNE COLLINE 5 CASES ? (chiffres non contractuels)
