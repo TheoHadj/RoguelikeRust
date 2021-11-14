@@ -254,20 +254,17 @@ impl Game{
     //Mettre avec room
     pub fn getDesignFromTile(&self) -> Vec<Design>  {
         let mut listDesign = Vec::new();
-        for a in 0..self.MAP_WIDTH{
-            for b in 0.. self.MAP_HEIGHT{
-
-                for x in 0..(self.ROOM_HEIGHT/self.TileHeight) as usize {
-                    for y in 0..(self.ROOM_WIDTH/self.TileHeight) as usize{
-                        if self.map[a][b]
-                        .blocked == true{
-                            let design =  Design::new((y as i32)*self.TileHeight,(x as i32)*self.TileHeight,self.TileHeight as u32,self.TileHeight as u32);
-                            listDesign.push(design);
-                        }
-                    }
+        let abc = self.map[0][0];
+        for x in 0..(self.ROOM_HEIGHT/self.TileHeight) as usize {
+            for y in 0..(self.ROOM_WIDTH/self.TileHeight) as usize{
+                if abc.tableRoom[x][y].blocked == true{
+                    let design =  Design::new((y as i32)*self.TileHeight,(x as i32)*self.TileHeight,self.TileHeight as u32,self.TileHeight as u32);
+                    listDesign.push(design);
                 }
             }
         }
+    
+
         
 
         listDesign
