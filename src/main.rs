@@ -1,16 +1,16 @@
 // TO DO :
 //     1-Voir le book "https://gameprogrammingpatterns.com/book" ! Implémenter des threads ? Choisir un pattern de programmation pour faire du clean
-//     2-Implémenter une game loop plus propre
+//     2-Implémenter une game loop plus propre (treads )
 
 
-//     3-créer des obstacles
-//     4-implémenter la room (qui deviendra une TileMap) et faire un algo qui la créer intelligement
-//  4.5 - Changement de carte 
+//     3-créer des obstaclesV
+//     4-implémenter la room (qui deviendra une TileMap) et faire un algo qui la créer intelligementV
+//  4.5 - Changement de carte V/2
 //     5-monstres qui tuent quand on les touchent
 //     6-IA pour les monstres
 //     7-Des projectiles
 //     8-jeu en ligne ? avec server ? 
-
+// Implémenter le tout en thread 
 //     Après ça j'aurai fais un tour de ce que je peux faire
 
 
@@ -95,23 +95,47 @@ fn main()  {
                 Event::KeyDown {
                     keycode:Some(Keycode::Up), .. 
                 } => {
-                    playernumdeux.mouvement(&game,0,-1); 
+                    player.mouvement(&game,0,-1);
+                    player.mouvement(&game,0,-1);
                 },
                 Event::KeyDown {
                     keycode:Some(Keycode::Down), .. 
                 } => {
-                    playernumdeux.mouvement(&game,0,1);
+                    player.mouvement(&game,0,1);
+                    player.mouvement(&game,0,1);
                 },
                 Event::KeyDown {
                     keycode:Some(Keycode::Right), .. 
                 } => {
-                    playernumdeux.mouvement(&game,1,0);
+                    player.mouvement(&game,1,0);
+                    player.mouvement(&game,1,0);
                 },
                 Event::KeyDown {
                     keycode:Some(Keycode::Left), .. 
                 } => {
-                    playernumdeux.mouvement(&game,-1,0);
+                    player.mouvement(&game,-1,0);
+                    player.mouvement(&game,-1,0);
                 },
+                // Event::KeyDown {
+                //     keycode:Some(Keycode::Up), .. 
+                // } => {
+                //     playernumdeux.mouvement(&game,0,-1); 
+                // },
+                // Event::KeyDown {
+                //     keycode:Some(Keycode::Down), .. 
+                // } => {
+                //     playernumdeux.mouvement(&game,0,1);
+                // },
+                // Event::KeyDown {
+                //     keycode:Some(Keycode::Right), .. 
+                // } => {
+                //     playernumdeux.mouvement(&game,1,0);
+                // },
+                // Event::KeyDown {
+                //     keycode:Some(Keycode::Left), .. 
+                // } => {
+                //     playernumdeux.mouvement(&game,-1,0);
+                // },
                 _ => {}
 
             }
@@ -166,8 +190,8 @@ fn main()  {
 
 struct Game {
     // position on room ? Ou plutôt dans player !
-    map : TileMap,
-    room : TileMap,
+    map : MapTileMap,
+    room : RoomTileMap,
     TileHeight : i32,
     ROOM_HEIGHT : i32,
     ROOM_WIDTH : i32
@@ -180,27 +204,28 @@ impl Game{
         let MAP_WIDTH = 3;
         let nbTileHeight = ROOM_HEIGHT/TileHeight;
         let nbTileWidth = ROOM_WIDTH/TileHeight;
+        let mut roomANTICRASH = vec![vec![Tile::empty(); (nbTileHeight) as usize]; (nbTileWidth) as usize]; // A CHANGER POUR AVOIR PLUSIEURS ROOM 
         let mut room = vec![vec![Tile::empty(); (nbTileHeight) as usize]; (nbTileWidth) as usize]; // A CHANGER POUR AVOIR PLUSIEURS ROOM 
-        let mut map = vec![vec![Tile::empty(); (MAP_HEIGHT) as usize]; (MAP_WIDTH) as usize];
+        let mut map = vec![vec![roomANTICRASH; (MAP_HEIGHT) as usize]; (MAP_WIDTH) as usize];
         
         for x in 0..(nbTileHeight) as usize{
             room[x][0]= Tile::wall();
             room[x][(nbTileWidth -1)  as usize]= Tile::wall();
-
         }
+        
         for y in 0..nbTileWidth as usize{
             room[0][y]= Tile::wall();
             room[(nbTileHeight -1) as usize][y]= Tile::wall();
         }
         
         room[7][3] = Tile::wall(); // !!! ATTENTION AU ROOM WIDTH IMPAIR
-        room[((ROOM_HEIGHT/TileHeight)/2 -1)as usize][0] = Tile::changeROOM();
+        room[((ROOM_HEIGHT/TileHeight)/2 -1)as usize][0] = Tile::door();
         // room[((ROOM_HEIGHT/TileHeight)/2 +1)as usize ][0] = Tile::empty();
-        room[((ROOM_HEIGHT/TileHeight)/2 -1)as usize][(ROOM_HEIGHT/TileHeight -1)as usize] = Tile::changeROOM();
-        room[0][((ROOM_WIDTH/TileHeight)/2 -1)as usize] = Tile::changeROOM();
-        room[(ROOM_WIDTH/TileHeight -1)as usize][((ROOM_WIDTH/TileHeight)/2 -1)as usize] = Tile::changeROOM();
+        room[((ROOM_HEIGHT/TileHeight)/2 -1)as usize][(ROOM_HEIGHT/TileHeight -1)as usize] = Tile::door();
+        room[0][((ROOM_WIDTH/TileHeight)/2 -1)as usize] = Tile::door();
+        room[(ROOM_WIDTH/TileHeight -1)as usize][((ROOM_WIDTH/TileHeight)/2 -1)as usize] = Tile::door();
 
-        println!("{0}", room[((ROOM_HEIGHT/TileHeight)/2 )as usize][0].blocked);
+        // println!("{0}", room[((ROOM_HEIGHT/TileHeight)/2 )as usize][0].blocked);
 
 
         let game = Game {map : map, room : room,  TileHeight : TileHeight, ROOM_HEIGHT : ROOM_HEIGHT, ROOM_WIDTH : ROOM_WIDTH};
@@ -237,7 +262,45 @@ impl Game{
 }
 
 
-type TileMap = Vec<Vec<Tile>>; // !!! Vec vec int de 0 à n puis enum qui les relie à des objets Tile => 0 -> Tile.empty   1 -> Tile.wall  VOIR VIDEO DE TANTAN SUR LE SUJET (+video de let's get rusty ?)
+// type RoomTileMap = Vec<Vec<Tile>>; // !!! Vec vec int de 0 à n puis enum qui les relie à des objets Tile => 0 -> Tile.empty   1 -> Tile.wall  VOIR VIDEO DE TANTAN SUR LES ENUMS (+video de let's get rusty ?)
+type MapTileMap = Vec<Vec<RoomTileMap>>; 
+
+pub struct  RoomTileMap {
+    tableRoom : Vec<Vec<Tile>>,
+
+}
+
+impl  RoomTileMap {
+    pub fn empty(&self, nbTileHeight : i32, nbTileWidth : i32, ROOM_HEIGHT : i32, ROOM_WIDTH : i32, TileHeight:i32 ) -> Self {
+        let mut room = self.createRoom(nbTileHeight, nbTileWidth, ROOM_HEIGHT, ROOM_WIDTH, TileHeight);
+        RoomTileMap {
+            tableRoom : room 
+        }
+    }
+
+    pub fn createRoom(&self, nbTileHeight : i32, nbTileWidth : i32, ROOM_HEIGHT : i32, ROOM_WIDTH : i32, TileHeight:i32) -> Vec<Vec<Tile>> {
+        let mut room = vec![vec![Tile::empty(); (nbTileHeight) as usize]; (nbTileWidth) as usize]; // A CHANGER POUR AVOIR PLUSIEURS ROOM 
+        for x in 0..(nbTileHeight) as usize{
+            room[x][0]= Tile::wall();
+            room[x][(nbTileWidth -1)  as usize]= Tile::wall();
+        }
+
+        for y in 0..nbTileWidth as usize{
+            room[0][y]= Tile::wall();
+            room[(nbTileHeight -1) as usize][y]= Tile::wall();
+        }
+        
+        room[7][3] = Tile::wall(); // !!! ATTENTION AU ROOM WIDTH IMPAIR
+        room[((ROOM_HEIGHT/TileHeight)/2 -1)as usize][0] = Tile::door();
+        // room[((ROOM_HEIGHT/TileHeight)/2 +1)as usize ][0] = Tile::empty();
+        room[((ROOM_HEIGHT/TileHeight)/2 -1)as usize][(ROOM_HEIGHT/TileHeight -1)as usize] = Tile::door();
+        room[0][((ROOM_WIDTH/TileHeight)/2 -1)as usize] = Tile::door();
+        room[(ROOM_WIDTH/TileHeight -1)as usize][((ROOM_WIDTH/TileHeight)/2 -1)as usize] = Tile::door();
+        room
+        
+    }
+}
+
 
 
 #[derive(Clone, Copy)]
@@ -265,7 +328,7 @@ impl Tile {
         }
     }
 
-    pub fn changeROOM() -> Self {
+    pub fn door() -> Self {
         Tile {
             blocked: false,
             door : true,
@@ -340,28 +403,33 @@ impl Player {
             if door == false {
                 self.design.x += x;
                 self.design.y += y;
+                println!("x:{0},y:{1}", &x, &y);
             }
             else{
                 println!("{0}!{1}", self.design.x, self.design.y);
-                if (positionTile.xmin == 0 + game.TileHeight){
-                    self.design.x = game.ROOM_HEIGHT - game.TileHeight*2 -1;
+                println!("{0}!{1}!!{2}", positionTile.xmin, positionTile.ymin, game.ROOM_HEIGHT - game.TileHeight -1);
+
+                // REMPLACER LES X PAR XMIN ? UNITE!    X = Y
+                if 0 < (self.design.x +x) && (self.design.x +x) < game.TileHeight{
+                    self.design.x = game.ROOM_HEIGHT - game.TileHeight*2;
                     self.map_x -= 1;
                     println!("x0");
-                    println!("{0}", self.map_x);
+                    println!("{0}|{1}", self.design.x, self.design.y);
+                    // println!("{0}", self.map_x);
 
                 }
-                else if self.design.x == (game.ROOM_HEIGHT - game.TileHeight) {
-                    self.design.x = 0 + game.TileHeight +1;
+                else if game.ROOM_HEIGHT > (self.design.x +x) && (self.design.x +x) > (game.ROOM_HEIGHT - game.TileHeight*2 -1) {
+                    self.design.x = 0 + game.TileHeight;
                     self.map_x += 1;
                     println!("x1");
                 }
-                if self.design.y == 0 + game.TileHeight{
-                    self.design.y = game.ROOM_WIDTH - game.TileHeight*2 -1;
+                if 0 < (self.design.y + y) && (self.design.y + y) < game.TileHeight{
+                    self.design.y = game.ROOM_WIDTH - game.TileHeight*2;
                     self.map_y -= 1;
                     println!("y0");
                 }
-                else if self.design.y == (game.ROOM_WIDTH - game.TileHeight) {
-                    self.design.y = 0 + game.TileHeight +1;
+                else if game.ROOM_WIDTH > (self.design.y+y) && (self.design.y+y) > (game.ROOM_WIDTH - game.TileHeight*2) {
+                    self.design.y = 0 + game.TileHeight ;
                     self.map_y += 1;
                     println!("y1");
                 }   
@@ -374,7 +442,7 @@ impl Player {
 
     }
 
-    fn changeROOM(x : usize, y : usize){
+    fn door(x : usize, y : usize){
 
 
     }
