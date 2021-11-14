@@ -191,10 +191,14 @@ fn main()  {
 struct Game {
     // position on room ? Ou plutôt dans player !
     map : MapTileMap,
-    room : RoomTileMap,
+    // room : RoomTileMap,
     TileHeight : i32,
     ROOM_HEIGHT : i32,
-    ROOM_WIDTH : i32
+    ROOM_WIDTH : i32,
+    nbTileHeight : i32,
+    nbTileWidth : i32,
+    MAP_HEIGHT : i32,
+    MAP_WIDTH : i32
 
 }
 impl Game{
@@ -204,31 +208,35 @@ impl Game{
         let MAP_WIDTH = 3;
         let nbTileHeight = ROOM_HEIGHT/TileHeight;
         let nbTileWidth = ROOM_WIDTH/TileHeight;
-        let mut roomANTICRASH = vec![vec![Tile::empty(); (nbTileHeight) as usize]; (nbTileWidth) as usize]; // A CHANGER POUR AVOIR PLUSIEURS ROOM 
-        let mut room = vec![vec![Tile::empty(); (nbTileHeight) as usize]; (nbTileWidth) as usize]; // A CHANGER POUR AVOIR PLUSIEURS ROOM 
-        let mut map = vec![vec![roomANTICRASH; (MAP_HEIGHT) as usize]; (MAP_WIDTH) as usize];
+        // let ROOMANTIBUG:RoomTileMap = vec![vec![Tile::empty(); (nbTileHeight) as usize]; (nbTileWidth) as usize]; // A CHANGER POUR AVOIR PLUSIEURS ROOM 
+        let mut map = vec![vec![RoomTileMap::new(); (MAP_HEIGHT) as usize]; (MAP_WIDTH) as usize];
+        // let mut roomANTICRASH = vec![vec![Tile::empty(); (nbTileHeight) as usize]; (nbTileWidth) as usize]; // A CHANGER POUR AVOIR PLUSIEURS ROOM 
+        // let mut room = vec![vec![Tile::empty(); (nbTileHeight) as usize]; (nbTileWidth) as usize]; // A CHANGER POUR AVOIR PLUSIEURS ROOM 
         
-        for x in 0..(nbTileHeight) as usize{
-            room[x][0]= Tile::wall();
-            room[x][(nbTileWidth -1)  as usize]= Tile::wall();
-        }
+        // for x in 0..(nbTileHeight) as usize{
+        //     room[x][0]= Tile::wall();
+        //     room[x][(nbTileWidth -1)  as usize]= Tile::wall();
+        // }
         
-        for y in 0..nbTileWidth as usize{
-            room[0][y]= Tile::wall();
-            room[(nbTileHeight -1) as usize][y]= Tile::wall();
-        }
+        // for y in 0..nbTileWidth as usize{
+        //     room[0][y]= Tile::wall();
+        //     room[(nbTileHeight -1) as usize][y]= Tile::wall();
+        // }
         
-        room[7][3] = Tile::wall(); // !!! ATTENTION AU ROOM WIDTH IMPAIR
-        room[((ROOM_HEIGHT/TileHeight)/2 -1)as usize][0] = Tile::door();
-        // room[((ROOM_HEIGHT/TileHeight)/2 +1)as usize ][0] = Tile::empty();
-        room[((ROOM_HEIGHT/TileHeight)/2 -1)as usize][(ROOM_HEIGHT/TileHeight -1)as usize] = Tile::door();
-        room[0][((ROOM_WIDTH/TileHeight)/2 -1)as usize] = Tile::door();
-        room[(ROOM_WIDTH/TileHeight -1)as usize][((ROOM_WIDTH/TileHeight)/2 -1)as usize] = Tile::door();
+        // room[7][3] = Tile::wall(); // !!! ATTENTION AU ROOM WIDTH IMPAIR
+        // room[((ROOM_HEIGHT/TileHeight)/2 -1)as usize][0] = Tile::door();
+        // // room[((ROOM_HEIGHT/TileHeight)/2 +1)as usize ][0] = Tile::empty();
+        // room[((ROOM_HEIGHT/TileHeight)/2 -1)as usize][(ROOM_HEIGHT/TileHeight -1)as usize] = Tile::door();
+        // room[0][((ROOM_WIDTH/TileHeight)/2 -1)as usize] = Tile::door();
+        // room[(ROOM_WIDTH/TileHeight -1)as usize][((ROOM_WIDTH/TileHeight)/2 -1)as usize] = Tile::door();
 
-        // println!("{0}", room[((ROOM_HEIGHT/TileHeight)/2 )as usize][0].blocked);
+        // // println!("{0}", room[((ROOM_HEIGHT/TileHeight)/2 )as usize][0].blocked);
 
 
-        let game = Game {map : map, room : room,  TileHeight : TileHeight, ROOM_HEIGHT : ROOM_HEIGHT, ROOM_WIDTH : ROOM_WIDTH};
+        let game = Game {map : map,  TileHeight : TileHeight, ROOM_HEIGHT : ROOM_HEIGHT, ROOM_WIDTH : ROOM_WIDTH, nbTileHeight : nbTileHeight ,nbTileWidth: nbTileWidth, MAP_WIDTH :MAP_WIDTH, MAP_HEIGHT :MAP_HEIGHT};
+        let mut map = vec![vec![RoomTileMap::empty(&game); (MAP_HEIGHT) as usize]; (MAP_WIDTH) as usize];
+        let game = Game {map : map,  TileHeight : TileHeight, ROOM_HEIGHT : ROOM_HEIGHT, ROOM_WIDTH : ROOM_WIDTH, nbTileHeight : nbTileHeight ,nbTileWidth: nbTileWidth, MAP_HEIGHT : MAP_HEIGHT, MAP_WIDTH : MAP_WIDTH};
+
         game
     }
 
@@ -246,14 +254,21 @@ impl Game{
     //Mettre avec room
     pub fn getDesignFromTile(&self) -> Vec<Design>  {
         let mut listDesign = Vec::new();
-        for x in 0..(self.ROOM_HEIGHT/self.TileHeight) as usize {
-            for y in 0..(self.ROOM_WIDTH/self.TileHeight) as usize{
-                if self.room[x][y].blocked == true{
-                    let design =  Design::new((y as i32)*self.TileHeight,(x as i32)*self.TileHeight,self.TileHeight as u32,self.TileHeight as u32);
-                    listDesign.push(design);
+        for a in 0..self.MAP_WIDTH{
+            for b in 0.. self.MAP_HEIGHT{
+
+                for x in 0..(self.ROOM_HEIGHT/self.TileHeight) as usize {
+                    for y in 0..(self.ROOM_WIDTH/self.TileHeight) as usize{
+                        if self.map[a][b]
+                        .blocked == true{
+                            let design =  Design::new((y as i32)*self.TileHeight,(x as i32)*self.TileHeight,self.TileHeight as u32,self.TileHeight as u32);
+                            listDesign.push(design);
+                        }
+                    }
                 }
             }
         }
+        
 
         listDesign
     }
@@ -265,40 +280,95 @@ impl Game{
 // type RoomTileMap = Vec<Vec<Tile>>; // !!! Vec vec int de 0 à n puis enum qui les relie à des objets Tile => 0 -> Tile.empty   1 -> Tile.wall  VOIR VIDEO DE TANTAN SUR LES ENUMS (+video de let's get rusty ?)
 type MapTileMap = Vec<Vec<RoomTileMap>>; 
 
+// pub struct  MapTileMap{
+//     table
+// }
+
+
+#[derive(Clone)]
+
 pub struct  RoomTileMap {
     tableRoom : Vec<Vec<Tile>>,
 
 }
 
 impl  RoomTileMap {
-    pub fn empty(&self, nbTileHeight : i32, nbTileWidth : i32, ROOM_HEIGHT : i32, ROOM_WIDTH : i32, TileHeight:i32 ) -> Self {
-        let mut room = self.createRoom(nbTileHeight, nbTileWidth, ROOM_HEIGHT, ROOM_WIDTH, TileHeight);
+    // pub fn createRoom(game : &Game) -> Vec<Vec<Tile>> {
+    //     let mut room = vec![vec![Tile::empty(); (game.nbTileHeight) as usize]; (game.nbTileWidth) as usize]; // A CHANGER POUR AVOIR PLUSIEURS ROOM 
+    //     for x in 0..(game.nbTileHeight) as usize{
+    //         room[x][0]= Tile::wall();
+    //         room[x][(game.nbTileWidth -1)  as usize]= Tile::wall();
+    //     }
+
+    //     for y in 0..game.nbTileWidth as usize{
+    //         room[0][y]= Tile::wall();
+    //         room[(game.nbTileHeight -1) as usize][y]= Tile::wall();
+    //     }
+        
+    //     room[7][3] = Tile::wall(); // !!! ATTENTION AU ROOM WIDTH IMPAIR
+    //     room[((game.ROOM_HEIGHT/game.TileHeight)/2 -1)as usize][0] = Tile::door();
+    //     // room[((ROOM_HEIGHT/TileHeight)/2 +1)as usize ][0] = Tile::empty();
+    //     room[((game.ROOM_HEIGHT/game.TileHeight)/2 -1)as usize][(game.ROOM_HEIGHT/game.TileHeight -1)as usize] = Tile::door();
+    //     room[0][((game.ROOM_WIDTH/game.TileHeight)/2 -1)as usize] = Tile::door();
+    //     room[(game.ROOM_WIDTH/game.TileHeight -1)as usize][((game.ROOM_WIDTH/game.TileHeight)/2 -1)as usize] = Tile::door();
+    //     room
+        
+    // }
+    pub fn new() -> Self {
+        let mut room = vec![vec![Tile::empty(); (1) as usize]; (1) as usize]; // A CHANGER POUR AVOIR PLUSIEURS ROOM 
+        RoomTileMap{tableRoom : room}
+    }
+    
+    pub fn empty(game: &Game ) -> Self {
+        let mut room = vec![vec![Tile::empty(); (game.nbTileHeight) as usize]; (game.nbTileWidth) as usize]; // A CHANGER POUR AVOIR PLUSIEURS ROOM 
+        for x in 0..(game.nbTileHeight) as usize{
+            room[x][0]= Tile::wall();
+            room[x][(game.nbTileWidth -1)  as usize]= Tile::wall();
+        }
+
+        for y in 0..game.nbTileWidth as usize{
+            room[0][y]= Tile::wall();
+            room[(game.nbTileHeight -1) as usize][y]= Tile::wall();
+        }
+        
+        room[7][3] = Tile::wall(); // !!! ATTENTION AU ROOM WIDTH IMPAIR
+        room[((game.ROOM_HEIGHT/game.TileHeight)/2 -1)as usize][0] = Tile::door();
+        // room[((ROOM_HEIGHT/TileHeight)/2 +1)as usize ][0] = Tile::empty();
+        room[((game.ROOM_HEIGHT/game.TileHeight)/2 -1)as usize][(game.ROOM_HEIGHT/game.TileHeight -1)as usize] = Tile::door();
+        room[0][((game.ROOM_WIDTH/game.TileHeight)/2 -1)as usize] = Tile::door();
+        room[(game.ROOM_WIDTH/game.TileHeight -1)as usize][((game.ROOM_WIDTH/game.TileHeight)/2 -1)as usize] = Tile::door();
+        RoomTileMap {
+            tableRoom : room 
+        }
+    }
+    pub fn centerWall(game: &Game ) -> Self {
+        let mut room = vec![vec![Tile::empty(); (game.nbTileHeight) as usize]; (game.nbTileWidth) as usize]; // A CHANGER POUR AVOIR PLUSIEURS ROOM 
+        for x in 0..(game.nbTileHeight) as usize{
+            room[x][0]= Tile::wall();
+            room[x][(game.nbTileWidth -1)  as usize]= Tile::wall();
+        }
+
+        for y in 0..game.nbTileWidth as usize{
+            room[0][y]= Tile::wall();
+            room[(game.nbTileHeight -1) as usize][y]= Tile::wall();
+        }
+        
+        room[7][3] = Tile::wall(); // !!! ATTENTION AU ROOM WIDTH IMPAIR
+        room[((game.ROOM_HEIGHT/game.TileHeight)/2 -1)as usize][0] = Tile::door();
+        // room[((ROOM_HEIGHT/TileHeight)/2 +1)as usize ][0] = Tile::empty();
+        room[((game.ROOM_HEIGHT/game.TileHeight)/2 -1)as usize][(game.ROOM_HEIGHT/game.TileHeight -1)as usize] = Tile::door();
+        room[0][((game.ROOM_WIDTH/game.TileHeight)/2 -1)as usize] = Tile::door();
+        room[(game.ROOM_WIDTH/game.TileHeight -1)as usize][((game.ROOM_WIDTH/game.TileHeight)/2 -1)as usize] = Tile::door();
+        room[14][14] = Tile::wall();
+        room[15][14] = Tile::wall();
+        room[14][15] = Tile::wall();
+        room[15][15] = Tile::wall();
         RoomTileMap {
             tableRoom : room 
         }
     }
 
-    pub fn createRoom(&self, nbTileHeight : i32, nbTileWidth : i32, ROOM_HEIGHT : i32, ROOM_WIDTH : i32, TileHeight:i32) -> Vec<Vec<Tile>> {
-        let mut room = vec![vec![Tile::empty(); (nbTileHeight) as usize]; (nbTileWidth) as usize]; // A CHANGER POUR AVOIR PLUSIEURS ROOM 
-        for x in 0..(nbTileHeight) as usize{
-            room[x][0]= Tile::wall();
-            room[x][(nbTileWidth -1)  as usize]= Tile::wall();
-        }
-
-        for y in 0..nbTileWidth as usize{
-            room[0][y]= Tile::wall();
-            room[(nbTileHeight -1) as usize][y]= Tile::wall();
-        }
-        
-        room[7][3] = Tile::wall(); // !!! ATTENTION AU ROOM WIDTH IMPAIR
-        room[((ROOM_HEIGHT/TileHeight)/2 -1)as usize][0] = Tile::door();
-        // room[((ROOM_HEIGHT/TileHeight)/2 +1)as usize ][0] = Tile::empty();
-        room[((ROOM_HEIGHT/TileHeight)/2 -1)as usize][(ROOM_HEIGHT/TileHeight -1)as usize] = Tile::door();
-        room[0][((ROOM_WIDTH/TileHeight)/2 -1)as usize] = Tile::door();
-        room[(ROOM_WIDTH/TileHeight -1)as usize][((ROOM_WIDTH/TileHeight)/2 -1)as usize] = Tile::door();
-        room
-        
-    }
+    
 }
 
 
