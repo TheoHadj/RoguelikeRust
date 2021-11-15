@@ -16,6 +16,8 @@
 
 //  LA FN MAIN AVEC LES GRAPHISMES EST DANS GAME 
 
+//  AJOUTER A DESIGN LES COULEURS
+
 
 // "!!!" = CHOSES IMPORTANTES
 // #[derive(Clone, Copy)]
@@ -42,7 +44,6 @@ use std::time::Duration;
 fn main()  {
   
     let game = Game::new(512,512);
-    let listDesignTile = game.getDesignFromTile();
     let mut player = Player::new(150, 100, 16, 16);
     let mut playernumdeux = Player::new( 130, 130, 32, 32);
 
@@ -142,6 +143,8 @@ fn main()  {
         }
 
         let mut ListObjects = [&player, &playernumdeux];
+        let listDesignTile = game.getDesignFromTile(&player);
+
 
         for tile in &listDesignTile{
             let mut texture = tile.set_texture(&creator);
@@ -150,7 +153,7 @@ fn main()  {
                 .with_texture_canvas(&mut texture, |texture_canvas|{
                     texture_canvas.clear();
                     texture_canvas.set_draw_color(Color::RGB(20,15, 122));
-                    texture_canvas.fill_rect(Rect::new(0, 0, 400, 300)).unwrap(); //REVOIR CA CARRE DE 400 POUR TEXTURE DE 16 
+                    texture_canvas.fill_rect(Rect::new(0, 0, 400, 300)).unwrap(); // !!!REVOIR CA CARRE DE 400 POUR TEXTURE DE 16 
     
             }).unwrap();
             canvas.set_draw_color(Color::RGB(50, 50, 70));
@@ -188,7 +191,7 @@ fn main()  {
 
 
 
-struct Game {
+pub struct Game {
     // position on room ? Ou plutôt dans player !
     map : MapTileMap,
     // room : RoomTileMap,
@@ -235,6 +238,9 @@ impl Game{
 
         let game = Game {map : map,  TileHeight : TileHeight, ROOM_HEIGHT : ROOM_HEIGHT, ROOM_WIDTH : ROOM_WIDTH, nbTileHeight : nbTileHeight ,nbTileWidth: nbTileWidth, MAP_WIDTH :MAP_WIDTH, MAP_HEIGHT :MAP_HEIGHT};
         let mut map = vec![vec![RoomTileMap::empty(&game); (MAP_HEIGHT) as usize]; (MAP_WIDTH) as usize];
+        map[0][1] = RoomTileMap::centerWall(&game);  
+        map[1][1] = RoomTileMap::centerWall(&game);  
+        map[1][2] = RoomTileMap::centerWall(&game);  
         let game = Game {map : map,  TileHeight : TileHeight, ROOM_HEIGHT : ROOM_HEIGHT, ROOM_WIDTH : ROOM_WIDTH, nbTileHeight : nbTileHeight ,nbTileWidth: nbTileWidth, MAP_HEIGHT : MAP_HEIGHT, MAP_WIDTH : MAP_WIDTH};
 
         game
@@ -252,9 +258,10 @@ impl Game{
     }
     
     //Mettre avec room
-    pub fn getDesignFromTile(&self) -> Vec<Design>  {
+    // !!!  AJOUTER UNE COULEUR AU DESIGN POUR LES DIFFERENTS TYPES DE TILES 
+    pub fn getDesignFromTile(&self, player : &Player) -> Vec<Design>  {
         let mut listDesign = Vec::new();
-        let abc = self.map[0][0];
+        let abc = &self.map[player.map_x as usize][player.map_y as usize];
         for x in 0..(self.ROOM_HEIGHT/self.TileHeight) as usize {
             for y in 0..(self.ROOM_WIDTH/self.TileHeight) as usize{
                 if abc.tableRoom[x][y].blocked == true{
@@ -351,8 +358,8 @@ impl  RoomTileMap {
         }
         
         room[7][3] = Tile::wall(); // !!! ATTENTION AU ROOM WIDTH IMPAIR
-        room[((game.ROOM_HEIGHT/game.TileHeight)/2 -1)as usize][0] = Tile::door();
         // room[((ROOM_HEIGHT/TileHeight)/2 +1)as usize ][0] = Tile::empty();
+        room[((game.ROOM_HEIGHT/game.TileHeight)/2 -1)as usize][0] = Tile::door();
         room[((game.ROOM_HEIGHT/game.TileHeight)/2 -1)as usize][(game.ROOM_HEIGHT/game.TileHeight -1)as usize] = Tile::door();
         room[0][((game.ROOM_WIDTH/game.TileHeight)/2 -1)as usize] = Tile::door();
         room[(game.ROOM_WIDTH/game.TileHeight -1)as usize][((game.ROOM_WIDTH/game.TileHeight)/2 -1)as usize] = Tile::door();
@@ -369,7 +376,7 @@ impl  RoomTileMap {
 }
 
 
-
+// !!! ENUMS REVOIR LES EXPLICATIONS TANTAN OU LET'S GET RUSTY
 #[derive(Clone, Copy)]
 pub struct Tile {
 
@@ -421,8 +428,16 @@ impl Tile {
 pub struct Player{
     //Position de la salle actuelle
     design : Design,
-    map_x : i8,
-    map_y : i8,
+    map_x : i32,
+    map_y : i32,
+    // inventory : Vec<Item>,
+    // activeItem : Vec<Item>,
+    // pv : i8,
+    // att : i8,
+    // def : i8,
+    // !!! RASSEMBLER TOUT CA DANS UNE STRUCT STATS ?
+
+
     
 }
 
@@ -445,22 +460,41 @@ impl Player {
         let mut door = false;
         let positionTile = game.calculPositionTile(self.design.x + x,self.design.y +y, self.design.height, self.design.width);
         println!("{0}!!{1}!!{2}", self.design.x, positionTile.xmin, positionTile.xmax);
+        println!("{0}!!{1}", self.map_x, self.map_y);
+        // let actualMap = game.map[self.map_x as usize][self.map_y as usize];
 
+        // for xi in positionTile.xmin..(positionTile.xmax +1){
+        //     if (game.room[(positionTile.ymin) as usize][(xi) as usize].blocked == true)||(game.room[(positionTile.ymax) as usize][(xi) as usize].blocked == true){
+        //         blocked = true;
+        //     }
+        //     else if (game.room[(xi) as usize][(positionTile.xmin) as usize].blocked == true)||(game.room[(xi) as usize][(positionTile.xmax) as usize].door == true) {
+        //         door = true;
+        //     }
+        // }
 
-        for xi in positionTile.xmin..(positionTile.xmax +1){
-            if (game.room[(positionTile.ymin) as usize][(xi) as usize].blocked == true)||(game.room[(positionTile.ymax) as usize][(xi) as usize].blocked == true){
+        // for yi in positionTile.ymin..(positionTile.ymax +1){
+        //     if (game.room[(yi) as usize][(positionTile.xmin) as usize].blocked == true)||(game.room[(yi) as usize][(positionTile.xmax) as usize].blocked == true){
+        //         blocked = true;
+        //     }
+        //     else if (game.room[(yi) as usize][(positionTile.xmin) as usize].blocked == true)||(game.room[(yi) as usize][(positionTile.xmax) as usize].door == true) {
+        //         door = true;
+        //         println!("!!");
+        //     }
+        // }
+        for xi in positionTile.xmin..(positionTile.xmax +1){ // !!! ATTENTION AU || !!! C'EST ICI QUE CE CREE LES PORTES INVISIBLES 
+            if (game.map[self.map_x as usize][self.map_y as usize].tableRoom[(positionTile.ymin) as usize][(xi) as usize].blocked == true)||(game.map[self.map_x as usize][self.map_y as usize].tableRoom[(positionTile.ymax) as usize][(xi) as usize].blocked == true){
                 blocked = true;
             }
-            else if (game.room[(xi) as usize][(positionTile.xmin) as usize].blocked == true)||(game.room[(xi) as usize][(positionTile.xmax) as usize].door == true) {
+            else if (game.map[self.map_x as usize][self.map_y as usize].tableRoom[(positionTile.ymin) as usize][(xi) as usize].blocked == true)||(game.map[self.map_x as usize][self.map_y as usize].tableRoom[(xi) as usize][(positionTile.ymax) as usize].door == true) {
                 door = true;
             }
         }
 
         for yi in positionTile.ymin..(positionTile.ymax +1){
-            if (game.room[(yi) as usize][(positionTile.xmin) as usize].blocked == true)||(game.room[(yi) as usize][(positionTile.xmax) as usize].blocked == true){
+            if (game.map[self.map_x as usize][self.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmin) as usize].blocked == true)||(game.map[self.map_x as usize][self.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmax) as usize].blocked == true){
                 blocked = true;
             }
-            else if (game.room[(yi) as usize][(positionTile.xmin) as usize].blocked == true)||(game.room[(yi) as usize][(positionTile.xmax) as usize].door == true) {
+            else if (game.map[self.map_x as usize][self.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmin) as usize].blocked == true)||(game.map[self.map_x as usize][self.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmax) as usize].door == true) {
                 door = true;
                 println!("!!");
             }
@@ -472,9 +506,12 @@ impl Player {
                 self.design.y += y;
                 println!("x:{0},y:{1}", &x, &y);
             }
-            else{
+            else if door == true{
+                println!("PORTE");
                 println!("{0}!{1}", self.design.x, self.design.y);
                 println!("{0}!{1}!!{2}", positionTile.xmin, positionTile.ymin, game.ROOM_HEIGHT - game.TileHeight -1);
+                self.design.x += x;
+                self.design.y += y;
 
                 // REMPLACER LES X PAR XMIN ? UNITE!    X = Y
                 if 0 < (self.design.x +x) && (self.design.x +x) < game.TileHeight{
@@ -490,7 +527,7 @@ impl Player {
                     self.map_x += 1;
                     println!("x1");
                 }
-                if 0 < (self.design.y + y) && (self.design.y + y) < game.TileHeight{
+                else if 0 < (self.design.y + y) && (self.design.y + y) < game.TileHeight{
                     self.design.y = game.ROOM_WIDTH - game.TileHeight*2;
                     self.map_y -= 1;
                     println!("y0");
@@ -509,10 +546,23 @@ impl Player {
 
     }
 
-    fn door(x : usize, y : usize){
+    // fn door(x : usize, y : usize){
 
 
-    }
+    // }
+
+}
+
+enum Items {
+
+}
+
+pub struct Item {
+
+
+}
+
+impl Item {
 
 }
 
@@ -540,7 +590,7 @@ impl Design{
 
 }
  
-struct Position{ //+Taille ? 
+pub struct Position{ //+Taille ? 
     xmax:i32,
     ymax:i32,
     xmin:i32,
