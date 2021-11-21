@@ -34,6 +34,7 @@ use sdl2::render::{Texture, TextureCreator};
 use sdl2::rect::*;
 use sdl2::video::WindowContext;
 use sdl2::pixels::{Color, PixelFormatEnum};
+use std::array;
 use std::time::Duration;
 
 
@@ -43,8 +44,10 @@ use std::time::Duration;
 
 fn main()  {
   
-    let game = Game::new(512,512);
+    let mut game = Game::new(512,512);
     let mut player = Player::new(150, 100, 16, 16);
+    // player.addObjectToInventory();
+    // println!("{}",player.inventory.len());
     let mut playernumdeux = Player::new( 130, 130, 32, 32);
 
     
@@ -63,6 +66,8 @@ fn main()  {
     let creator = canvas.texture_creator();
     
     let mut event_pump = sdl_context.event_pump().unwrap();
+
+    let mut listOfProjectile : Vec<HitBox> = Vec::new();
 
     'running: loop {
         for event in event_pump.poll_iter() {
@@ -117,6 +122,12 @@ fn main()  {
                     player.mouvement(&game,-1,0);
                     player.mouvement(&game,-1,0);
                 },
+                Event::KeyDown {
+                    keycode:Some(Keycode::Space), .. 
+                } => {
+                    let x = player.attack(&mut game);
+                    listOfProjectile.push(x);
+                },
                 // Event::KeyDown {
                 //     keycode:Some(Keycode::Up), .. 
                 // } => {
@@ -144,6 +155,8 @@ fn main()  {
 
         let mut ListObjects = [&player, &playernumdeux];
         let listDesignTile = game.getDesignFromTile(&player);
+        let mut listOfElementToRemove : Vec<i8> = Vec::new() ;
+        println!("{}", listOfProjectile.len()) ;
 
 
         for tile in &listDesignTile{
@@ -152,14 +165,17 @@ fn main()  {
             canvas
                 .with_texture_canvas(&mut texture, |texture_canvas|{
                     texture_canvas.clear();
-                    texture_canvas.set_draw_color(Color::RGB(20,15, 122));
-                    texture_canvas.fill_rect(Rect::new(0, 0, 400, 300)).unwrap(); // !!!REVOIR CA CARRE DE 400 POUR TEXTURE DE 16 
+                    texture_canvas.set_draw_color(Color::RGB(tile.colour[0],tile.colour[1], tile.colour[2]));
+                    texture_canvas.fill_rect(Rect::new(0, 0, 16, 16)).unwrap(); // !!!REVOIR CA CARRE DE 400 POUR TEXTURE DE 16 
     
             }).unwrap();
             canvas.set_draw_color(Color::RGB(50, 50, 70));
             canvas.copy(&mut texture, None, rect).unwrap();
     
         }
+
+
+        //Transformer listObjects en Design (c'est déjà des joueurs)
 
         for object in ListObjects{
             let mut texture = object.design.set_texture(&creator);
@@ -177,6 +193,76 @@ fn main()  {
 
         }
         
+        // METTRE PROJECTCALCUL AILLEURS
+        'projectcalcul : for object in &mut listOfProjectile{
+            let mut i = 0;
+            let mut blocked = false;
+            let mut door = false;
+            println!("X : {0} § Y : {1}", object.design.x, object.design.y);
+            let positionTile = game.calculPositionTile(object.design.x + object.vitessex as i32, object.design.y + object.vitessey as i32, object.design.height, object.design.width);
+            for xi in positionTile.xmin..(positionTile.xmax +1){ // !!! ATTENTION AU || !!! C'EST ICI QUE CE CREE LES PORTES INVISIBLES 
+                if (game.map[player.map_x as usize][player.map_y as usize].tableRoom[(positionTile.ymin) as usize][(xi) as usize].blocked == true)||(game.map[player.map_x as usize][player.map_y as usize].tableRoom[(positionTile.ymax) as usize][(xi) as usize].blocked == true){
+                    blocked = true;
+                    println!("1");
+                }
+                else if (game.map[player.map_x as usize][player.map_y as usize].tableRoom[(positionTile.ymin) as usize][(xi) as usize].blocked == true)||(game.map[player.map_x as usize][player.map_y as usize].tableRoom[(xi) as usize][(positionTile.ymax) as usize].door == true) {
+                    door = true;
+                    println!("2");
+
+                }
+            }
+
+            for yi in positionTile.ymin..(positionTile.ymax +1){
+                if (game.map[player.map_x as usize][player.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmin) as usize].blocked == true)||(game.map[player.map_x as usize][player.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmax) as usize].blocked == true){
+                    blocked = true;
+                    println!("3");
+
+                }
+                else if (game.map[player.map_x as usize][player.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmin) as usize].blocked == true)||(game.map[player.map_x as usize][player.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmax) as usize].door == true) {
+                    door = true;
+                    println!("4");
+                }
+            }
+            if blocked == true || door == true {
+                listOfElementToRemove.push(i);
+                println!("5");
+
+                // listOfProjectile.remove(i);
+                // i+=1;
+                // continue 'projectcalcul;
+                
+
+            }
+            else {
+                object.design.x += object.vitessex as i32; 
+                object.design.y += object.vitessey as i32; 
+                println!("6");
+            }
+
+            i+=1;
+        }
+        
+        for index in listOfElementToRemove{
+            listOfProjectile.remove(index as usize);
+        }
+
+        for object in &listOfProjectile{
+            let mut texture = object.design.set_texture(&creator);
+            let rect = Some(Rect::new(object.design.x,object.design.y, object.design.width, object.design.height));
+            canvas
+                .with_texture_canvas(&mut texture, |texture_canvas|{
+                    texture_canvas.clear();
+                    texture_canvas.set_draw_color(Color::RGB(80,175, 230));
+                    texture_canvas.fill_rect(Rect::new(0, 0, 400, 300)).unwrap();
+    
+            }).unwrap();
+            canvas.set_draw_color(Color::RGB(object.design.colour[0], object.design.colour[1], object.design.colour[2]));
+            canvas.copy(&mut texture, None, rect).unwrap();
+    
+
+        }
+
+
         canvas.present();
         canvas.clear();
 
@@ -201,9 +287,11 @@ pub struct Game {
     nbTileHeight : i32,
     nbTileWidth : i32,
     MAP_HEIGHT : i32,
-    MAP_WIDTH : i32
+    MAP_WIDTH : i32,
+    listOfProjectile : Vec<HitBox>
 
 }
+
 impl Game{
     pub fn new(ROOM_HEIGHT :i32,ROOM_WIDTH:i32) -> Game{
         let TileHeight = 16;
@@ -213,6 +301,7 @@ impl Game{
         let nbTileWidth = ROOM_WIDTH/TileHeight;
         // let ROOMANTIBUG:RoomTileMap = vec![vec![Tile::empty(); (nbTileHeight) as usize]; (nbTileWidth) as usize]; // A CHANGER POUR AVOIR PLUSIEURS ROOM 
         let mut map = vec![vec![RoomTileMap::new(); (MAP_HEIGHT) as usize]; (MAP_WIDTH) as usize];
+        let mut listOfProjectile = Vec::new(); 
         // let mut roomANTICRASH = vec![vec![Tile::empty(); (nbTileHeight) as usize]; (nbTileWidth) as usize]; // A CHANGER POUR AVOIR PLUSIEURS ROOM 
         // let mut room = vec![vec![Tile::empty(); (nbTileHeight) as usize]; (nbTileWidth) as usize]; // A CHANGER POUR AVOIR PLUSIEURS ROOM 
         
@@ -236,12 +325,13 @@ impl Game{
         // // println!("{0}", room[((ROOM_HEIGHT/TileHeight)/2 )as usize][0].blocked);
 
 
-        let game = Game {map : map,  TileHeight : TileHeight, ROOM_HEIGHT : ROOM_HEIGHT, ROOM_WIDTH : ROOM_WIDTH, nbTileHeight : nbTileHeight ,nbTileWidth: nbTileWidth, MAP_WIDTH :MAP_WIDTH, MAP_HEIGHT :MAP_HEIGHT};
+        let game = Game {map : map,  TileHeight : TileHeight, ROOM_HEIGHT : ROOM_HEIGHT, ROOM_WIDTH : ROOM_WIDTH, nbTileHeight : nbTileHeight ,nbTileWidth: nbTileWidth, MAP_WIDTH :MAP_WIDTH, MAP_HEIGHT :MAP_HEIGHT, listOfProjectile:listOfProjectile};
         let mut map = vec![vec![RoomTileMap::empty(&game); (MAP_HEIGHT) as usize]; (MAP_WIDTH) as usize];
         map[0][1] = RoomTileMap::centerWall(&game);  
         map[1][1] = RoomTileMap::centerWall(&game);  
         map[1][2] = RoomTileMap::centerWall(&game);  
-        let game = Game {map : map,  TileHeight : TileHeight, ROOM_HEIGHT : ROOM_HEIGHT, ROOM_WIDTH : ROOM_WIDTH, nbTileHeight : nbTileHeight ,nbTileWidth: nbTileWidth, MAP_HEIGHT : MAP_HEIGHT, MAP_WIDTH : MAP_WIDTH};
+        let mut listOfProjectile = Vec::new(); 
+        let game = Game {map : map,  TileHeight : TileHeight, ROOM_HEIGHT : ROOM_HEIGHT, ROOM_WIDTH : ROOM_WIDTH, nbTileHeight : nbTileHeight ,nbTileWidth: nbTileWidth, MAP_HEIGHT : MAP_HEIGHT, MAP_WIDTH : MAP_WIDTH, listOfProjectile:listOfProjectile};
 
         game
     }
@@ -265,7 +355,11 @@ impl Game{
         for x in 0..(self.ROOM_HEIGHT/self.TileHeight) as usize {
             for y in 0..(self.ROOM_WIDTH/self.TileHeight) as usize{
                 if abc.tableRoom[x][y].blocked == true{
-                    let design =  Design::new((y as i32)*self.TileHeight,(x as i32)*self.TileHeight,self.TileHeight as u32,self.TileHeight as u32);
+                    let design =  Design::new((y as i32)*self.TileHeight,(x as i32)*self.TileHeight,self.TileHeight as u32,self.TileHeight as u32,65,20,65);
+                    listDesign.push(design);
+                }
+                if abc.tableRoom[x][y].door == true{
+                    let design =  Design::new((y as i32)*self.TileHeight,(x as i32)*self.TileHeight,self.TileHeight as u32,self.TileHeight as u32,160,160,160);
                     listDesign.push(design);
                 }
             }
@@ -275,6 +369,13 @@ impl Game{
         
 
         listDesign
+    }
+
+    pub fn appendListProject(&mut self, hitBox : HitBox){
+        // let hitBox = HitBox::new(); 
+        self.listOfProjectile.push(hitBox);
+
+        
     }
 
 
@@ -430,14 +531,14 @@ pub struct Player{
     design : Design,
     map_x : i32,
     map_y : i32,
+    facex : i32,
+    facey : i32,
     // inventory : Vec<Item>,
     // activeItem : Vec<Item>,
     // pv : i8,
     // att : i8,
     // def : i8,
     // !!! RASSEMBLER TOUT CA DANS UNE STRUCT STATS ?
-
-
     
 }
 
@@ -448,10 +549,21 @@ impl Player {
     // }
 
     fn new(x:i32, y:i32, width :u32, height: u32) -> Player{
-        let design = Design::new(x,y,height,width);
-        let player= Player{design : design, map_x : 0, map_y : 0};
+        let design = Design::new(x,y,height,width,230,210,130);
+        // let inventory = Vec::new();
+        // let activeItem = Vec::new();
+        let player= Player{design : design, map_x : 0, map_y : 0, facex : 0, facey : 0};
+        // let player= Player{design : design, map_x : 0, map_y : 0, inventory:inventory, activeItem:activeItem};
         player
     }
+
+    // fn addObjectToInventory(& mut self){
+    //     // !!! Inventory inutile atm 
+        
+    //     self.inventory.push(Item::newBowTest());
+    //     self.activeItem.push(Item::newBowTest());
+
+    // }
 
 
     fn mouvement(&mut self, game : &Game, x:i32, y:i32){
@@ -461,6 +573,8 @@ impl Player {
         let positionTile = game.calculPositionTile(self.design.x + x,self.design.y +y, self.design.height, self.design.width);
         println!("{0}!!{1}!!{2}", self.design.x, positionTile.xmin, positionTile.xmax);
         println!("{0}!!{1}", self.map_x, self.map_y);
+        self.facex = x ;
+        self.facey = y ;
         // let actualMap = game.map[self.map_x as usize][self.map_y as usize];
 
         // for xi in positionTile.xmin..(positionTile.xmax +1){
@@ -546,6 +660,16 @@ impl Player {
 
     }
 
+    fn attack(&self, game : &mut Game) -> HitBox{
+        // let bow = Item::newBowTest();
+        let hitBox = HitBox::new(&self); 
+        // game.appendListProject(hitBox);
+        // Suivre ça pour ajouter les valeurs du player à HitBox
+        println!("Projectile lancé");
+        hitBox
+
+    }
+
     // fn door(x : usize, y : usize){
 
 
@@ -553,18 +677,71 @@ impl Player {
 
 }
 
+
+
+pub struct HitBox{
+    vitessex : i8,
+    vitessey : i8,
+    design : Design,
+    
+    
+}
+
+impl HitBox{
+    pub fn new(player : &Player) -> Self{
+        let design = Design::new(player.design.x,player.design.y,1,3,0,0,0);
+        let hitbox = HitBox{vitessex : player.facex as i8,vitessey : player.facey as i8, design : design};
+        hitbox
+    }
+}
+
+
+// enum WeaponKind {
+//     Bow{att : i8 },
+//     Sword{att : i8 },
+// }
+// pub struct Weapon {
+//     kind : WeaponKind,
+//     att : i8, 
+//     hitBox : HitBox,
+//     Sword{att : i8, projectile: Projectile },
+// }
+
+// enum ArmorKind{
+//     Armor{},
+//     Boots{ms:i8,}
+// }
+
+// pub struct  Armor{
+//     kind : ArmorKind,
+//     def : i8,
+
+// }
+
+// !!! Rajouter une enum intermédiaire pour différencier les armes et le reste COMME AU DESSUS ?  
 enum Items {
+    Sword{att : i8, hitBox : HitBox },
+    Bow{att : i8, hitBox : HitBox},
+    Armor{def:i8}
 
 }
 
 pub struct Item {
+    // kind : Items,
+    att : i8,
+    hitBox : HitBox,
 
 
 }
 
-impl Item {
-
-}
+// impl Item {
+//     pub fn newBowTest() -> Self{
+//         // let hitbox= HitBox::new();
+//         // let item = Item{att:5,hitBox:hitbox}; 
+//         // let item = Item{kind : Items::Sword{att:5,hitBox:hitbox}}; 
+//         // item
+//     }
+// }
 
 #[derive(Clone, Copy)]
 pub struct Design{
@@ -572,12 +749,13 @@ pub struct Design{
     y:i32,
     height: u32,
     width: u32,
+    colour : [u8; 3],
 
 }
 
 impl Design{
-    pub fn new(x:i32,y:i32,height: u32,width: u32) -> Design{
-        let design = Design{x:x, y:y, height: height, width: width};
+    pub fn new(x:i32,y:i32,height: u32,width: u32, r: u8, g: u8, b:u8) -> Design{
+        let design = Design{x:x, y:y, height: height, width: width, colour:[r,g,b]};
         design
     }
     
@@ -612,3 +790,10 @@ impl Position{
 //     position:Position,
 
 // }
+
+
+pub struct  Colour {
+    R: i8,
+    G: i8,
+    B :i8
+}
