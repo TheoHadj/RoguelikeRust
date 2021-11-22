@@ -25,6 +25,7 @@
 // !!! passer toutes les variables en u32
 // !!! meme plus petit qu'une tile le player fonde ses calculs sur les tiles RÉGLÉ
 // Thread avec event ne venant pas de sdl2
+// Verifier les algo ?
 
 
 
@@ -34,7 +35,6 @@ use sdl2::render::{Texture, TextureCreator};
 use sdl2::rect::*;
 use sdl2::video::WindowContext;
 use sdl2::pixels::{Color, PixelFormatEnum};
-use std::array;
 use std::time::Duration;
 
 
@@ -49,6 +49,7 @@ fn main()  {
     // player.addObjectToInventory();
     // println!("{}",player.inventory.len());
     let mut playernumdeux = Player::new( 130, 130, 32, 32);
+
 
     
     let sdl_context = sdl2::init().unwrap();
@@ -68,6 +69,12 @@ fn main()  {
     let mut event_pump = sdl_context.event_pump().unwrap();
 
     let mut listOfProjectile : Vec<HitBox> = Vec::new();
+    let mut listOfMonster : Vec<Monster> = Vec::new();
+
+    let mut monster = Monster::new();
+    listOfMonster.push(monster);
+
+
 
     'running: loop {
         for event in event_pump.poll_iter() {
@@ -153,12 +160,26 @@ fn main()  {
             }
         }
 
-        let mut ListObjects = [&player, &playernumdeux];
-        let listDesignTile = game.getDesignFromTile(&player);
+        // let ListObjects = [&player, &playernumdeux];
+        let mut listDesignTile = game.getDesignFromTile(&player);
+
+        for monster in &mut listOfMonster{
+            if monster.map_x == player.map_x && monster.map_y == player.map_y{
+                monster.calculDistance(&player);
+
+            }
+
+        }
+        
+        listDesignTile.push(player.design);
+        // listDesignTile.push(monster.design);
         let mut listOfElementToRemove : Vec<i8> = Vec::new() ;
-        println!("{}", listOfProjectile.len()) ;
+        let mut listOfMonsterToRemove : Vec<i8> = Vec::new() ;
+        // println!("{}", listOfProjectile.len());
+        // let mut monsters : Vec<Monster> = Vec::new();
+        // monsters.push(monster);
 
-
+        //RENAME TILE EN OBJECT
         for tile in &listDesignTile{
             let mut texture = tile.set_texture(&creator);
             let rect = Some(Rect::new(tile.x,tile.y, tile.width, tile.height));
@@ -166,7 +187,7 @@ fn main()  {
                 .with_texture_canvas(&mut texture, |texture_canvas|{
                     texture_canvas.clear();
                     texture_canvas.set_draw_color(Color::RGB(tile.colour[0],tile.colour[1], tile.colour[2]));
-                    texture_canvas.fill_rect(Rect::new(0, 0, 16, 16)).unwrap(); // !!!REVOIR CA CARRE DE 400 POUR TEXTURE DE 16 
+                    texture_canvas.fill_rect(Rect::new(0, 0, tile.width, tile.width)).unwrap(); // !!!REVOIR CA CARRE DE 400 POUR TEXTURE DE 16 
     
             }).unwrap();
             canvas.set_draw_color(Color::RGB(50, 50, 70));
@@ -177,73 +198,98 @@ fn main()  {
 
         //Transformer listObjects en Design (c'est déjà des joueurs)
 
-        for object in ListObjects{
-            let mut texture = object.design.set_texture(&creator);
-            let rect = Some(Rect::new(object.design.x,object.design.y, object.design.width, object.design.height));
-            canvas
-                .with_texture_canvas(&mut texture, |texture_canvas|{
-                    texture_canvas.clear();
-                    texture_canvas.set_draw_color(Color::RGB(80,175, 230));
-                    texture_canvas.fill_rect(Rect::new(0, 0, 400, 300)).unwrap();
+        // for object in ListObjects{
+        //     let mut texture = object.design.set_texture(&creator);
+        //     let rect = Some(Rect::new(object.design.x,object.design.y, object.design.width, object.design.height));
+        //     canvas
+        //         .with_texture_canvas(&mut texture, |texture_canvas|{
+        //             texture_canvas.clear();
+        //             texture_canvas.set_draw_color(Color::RGB(80,175, 230));
+        //             texture_canvas.fill_rect(Rect::new(0, 0, 400, 300)).unwrap();
     
-            }).unwrap();
-            canvas.set_draw_color(Color::RGB(50, 50, 70));
-            canvas.copy(&mut texture, None, rect).unwrap();
+        //     }).unwrap();
+        //     canvas.set_draw_color(Color::RGB(50, 50, 70));
+        //     canvas.copy(&mut texture, None, rect).unwrap();
     
 
-        }
+        // }
         
         // METTRE PROJECTCALCUL AILLEURS
-        'projectcalcul : for object in &mut listOfProjectile{
+        'projectilecalcul : for object in &mut listOfProjectile{
             let mut i = 0;
             let mut blocked = false;
             let mut door = false;
-            println!("X : {0} § Y : {1}", object.design.x, object.design.y);
-            let positionTile = game.calculPositionTile(object.design.x + object.vitessex as i32, object.design.y + object.vitessey as i32, object.design.height, object.design.width);
-            for xi in positionTile.xmin..(positionTile.xmax +1){ // !!! ATTENTION AU || !!! C'EST ICI QUE CE CREE LES PORTES INVISIBLES 
-                if (game.map[player.map_x as usize][player.map_y as usize].tableRoom[(positionTile.ymin) as usize][(xi) as usize].blocked == true)||(game.map[player.map_x as usize][player.map_y as usize].tableRoom[(positionTile.ymax) as usize][(xi) as usize].blocked == true){
-                    blocked = true;
-                    println!("1");
+            // println!("X : {0} § Y : {1}", object.design.x, object.design.y);
+            if object.map_x == player.map_x && object.map_y == player.map_y{
+                
+                let positionTile = game.calculPositionTile(object.design.x + object.vitessex as i32, object.design.y + object.vitessey as i32, object.design.height, object.design.width);
+                for xi in positionTile.xmin..(positionTile.xmax +1){ // !!! ATTENTION AU || !!! C'EST ICI QUE CE CREE LES PORTES INVISIBLES 
+                    if (game.map[player.map_x as usize][player.map_y as usize].tableRoom[(positionTile.ymin) as usize][(xi) as usize].blocked == true)||(game.map[player.map_x as usize][player.map_y as usize].tableRoom[(positionTile.ymax) as usize][(xi) as usize].blocked == true){
+                        blocked = true;
+                        // println!("1");
+                    }
+                    else if (game.map[player.map_x as usize][player.map_y as usize].tableRoom[(positionTile.ymin) as usize][(xi) as usize].blocked == true)||(game.map[player.map_x as usize][player.map_y as usize].tableRoom[(xi) as usize][(positionTile.ymax) as usize].door == true) {
+                        door = true;
+                        // println!("2");
+    
+                    }
                 }
-                else if (game.map[player.map_x as usize][player.map_y as usize].tableRoom[(positionTile.ymin) as usize][(xi) as usize].blocked == true)||(game.map[player.map_x as usize][player.map_y as usize].tableRoom[(xi) as usize][(positionTile.ymax) as usize].door == true) {
-                    door = true;
-                    println!("2");
-
+    
+                for yi in positionTile.ymin..(positionTile.ymax +1){
+                    if (game.map[player.map_x as usize][player.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmin) as usize].blocked == true)||(game.map[player.map_x as usize][player.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmax) as usize].blocked == true){
+                        blocked = true;
+                        // println!("3");
+    
+                    }
+                    else if (game.map[player.map_x as usize][player.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmin) as usize].blocked == true)||(game.map[player.map_x as usize][player.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmax) as usize].door == true) {
+                        door = true;
+                        // println!("4");
+                    }
                 }
+                if blocked == true || door == true {
+                    listOfElementToRemove.push(i);
+                    // println!("5");
             }
+            else {
+                let mut j = 0;
+                for monster in &mut listOfMonster{
+                    // let monsterTile = game.calculPositionTile(monster.design.x, monster.design.y, monster.design.height, monster.design.width);
+                    if (monster.design.x <= object.design.x && object.design.x <= (monster.design.x + monster.design.width as i32)) && (monster.design.y <= object.design.y && object.design.y <= (monster.design.y + monster.design.height as i32)){
+                        listOfElementToRemove.push(i);
+                        monster.pv -= object.att;
+                        if monster.pv <= 0{
+                            listOfMonsterToRemove.push(j)
+                        }
+                        j +=1;
 
-            for yi in positionTile.ymin..(positionTile.ymax +1){
-                if (game.map[player.map_x as usize][player.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmin) as usize].blocked == true)||(game.map[player.map_x as usize][player.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmax) as usize].blocked == true){
-                    blocked = true;
-                    println!("3");
-
+                    }
                 }
-                else if (game.map[player.map_x as usize][player.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmin) as usize].blocked == true)||(game.map[player.map_x as usize][player.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmax) as usize].door == true) {
-                    door = true;
-                    println!("4");
-                }
+                object.design.x += object.vitessex as i32; 
+                object.design.y += object.vitessey as i32; 
+                // println!("6");
             }
-            if blocked == true || door == true {
-                listOfElementToRemove.push(i);
-                println!("5");
 
                 // listOfProjectile.remove(i);
                 // i+=1;
                 // continue 'projectcalcul;
-                
+            }
+
+            else {
+                listOfElementToRemove.push(i);
 
             }
-            else {
-                object.design.x += object.vitessex as i32; 
-                object.design.y += object.vitessey as i32; 
-                println!("6");
-            }
+
+
 
             i+=1;
         }
         
         for index in listOfElementToRemove{
             listOfProjectile.remove(index as usize);
+        }
+
+        for index in listOfMonsterToRemove{
+            listOfMonster.remove(index as usize);
         }
 
         for object in &listOfProjectile{
@@ -253,11 +299,30 @@ fn main()  {
                 .with_texture_canvas(&mut texture, |texture_canvas|{
                     texture_canvas.clear();
                     texture_canvas.set_draw_color(Color::RGB(80,175, 230));
-                    texture_canvas.fill_rect(Rect::new(0, 0, 400, 300)).unwrap();
+                    texture_canvas.fill_rect(Rect::new(0, 0, object.design.width, object.design.height)).unwrap();
     
             }).unwrap();
             canvas.set_draw_color(Color::RGB(object.design.colour[0], object.design.colour[1], object.design.colour[2]));
             canvas.copy(&mut texture, None, rect).unwrap();
+    
+
+        }
+
+        for object in &listOfMonster{
+            if object.map_x == player.map_x && object.map_y == player.map_y{
+
+                let mut texture = object.design.set_texture(&creator);
+                let rect = Some(Rect::new(object.design.x,object.design.y, object.design.width, object.design.height));
+                canvas
+                    .with_texture_canvas(&mut texture, |texture_canvas|{
+                        texture_canvas.clear();
+                        texture_canvas.set_draw_color(Color::RGB(80,175, 230));
+                        texture_canvas.fill_rect(Rect::new(0, 0, object.design.width, object.design.height)).unwrap();
+        
+                }).unwrap();
+                canvas.set_draw_color(Color::RGB(object.design.colour[0], object.design.colour[1], object.design.colour[2]));
+                canvas.copy(&mut texture, None, rect).unwrap();
+            }
     
 
         }
@@ -571,8 +636,8 @@ impl Player {
         let mut blocked = false;
         let mut door = false;
         let positionTile = game.calculPositionTile(self.design.x + x,self.design.y +y, self.design.height, self.design.width);
-        println!("{0}!!{1}!!{2}", self.design.x, positionTile.xmin, positionTile.xmax);
-        println!("{0}!!{1}", self.map_x, self.map_y);
+        // println!("{0}!!{1}!!{2}", self.design.x, positionTile.xmin, positionTile.xmax);
+        // println!("{0}!!{1}", self.map_x, self.map_y);
         self.facex = x ;
         self.facey = y ;
         // let actualMap = game.map[self.map_x as usize][self.map_y as usize];
@@ -610,7 +675,7 @@ impl Player {
             }
             else if (game.map[self.map_x as usize][self.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmin) as usize].blocked == true)||(game.map[self.map_x as usize][self.map_y as usize].tableRoom[(yi) as usize][(positionTile.xmax) as usize].door == true) {
                 door = true;
-                println!("!!");
+                // println!("!!");
             }
         }
 
@@ -618,12 +683,12 @@ impl Player {
             if door == false {
                 self.design.x += x;
                 self.design.y += y;
-                println!("x:{0},y:{1}", &x, &y);
+                // println!("x:{0},y:{1}", &x, &y);
             }
             else if door == true{
-                println!("PORTE");
-                println!("{0}!{1}", self.design.x, self.design.y);
-                println!("{0}!{1}!!{2}", positionTile.xmin, positionTile.ymin, game.ROOM_HEIGHT - game.TileHeight -1);
+                // println!("PORTE");
+                // println!("{0}!{1}", self.design.x, self.design.y);
+                // println!("{0}!{1}!!{2}", positionTile.xmin, positionTile.ymin, game.ROOM_HEIGHT - game.TileHeight -1);
                 self.design.x += x;
                 self.design.y += y;
 
@@ -631,25 +696,25 @@ impl Player {
                 if 0 < (self.design.x +x) && (self.design.x +x) < game.TileHeight{
                     self.design.x = game.ROOM_HEIGHT - game.TileHeight*2;
                     self.map_x -= 1;
-                    println!("x0");
-                    println!("{0}|{1}", self.design.x, self.design.y);
+                    // println!("x0");
+                    // println!("{0}|{1}", self.design.x, self.design.y);
                     // println!("{0}", self.map_x);
 
                 }
-                else if game.ROOM_HEIGHT > (self.design.x +x) && (self.design.x +x) > (game.ROOM_HEIGHT - game.TileHeight*2 -1) {
+                else if game.ROOM_HEIGHT >= (self.design.x +x) && (self.design.x +x) >= (game.ROOM_HEIGHT - game.TileHeight*2 -1) {
                     self.design.x = 0 + game.TileHeight;
                     self.map_x += 1;
-                    println!("x1");
+                    // println!("x1");
                 }
-                else if 0 < (self.design.y + y) && (self.design.y + y) < game.TileHeight{
+                else if 0 <= (self.design.y + y) && (self.design.y + y) <= game.TileHeight{
                     self.design.y = game.ROOM_WIDTH - game.TileHeight*2;
                     self.map_y -= 1;
-                    println!("y0");
+                    // println!("y0");
                 }
-                else if game.ROOM_WIDTH > (self.design.y+y) && (self.design.y+y) > (game.ROOM_WIDTH - game.TileHeight*2) {
+                else if game.ROOM_WIDTH >= (self.design.y+y) && (self.design.y+y) >= (game.ROOM_WIDTH - game.TileHeight*2) {
                     self.design.y = 0 + game.TileHeight ;
                     self.map_y += 1;
-                    println!("y1");
+                    // println!("y1");
                 }   
             }        
         }
@@ -677,12 +742,69 @@ impl Player {
 
 }
 
+pub struct Monster{
+    design : Design,
+    map_x : i32,
+    map_y : i32,
+    pv : i8,
+    distance_secu : i16
+    // !!!  STRUCT STATS ?
+    
+}
 
+impl Monster{
+    pub fn new() -> Self{
+        let design = Design::new(65,80,16,16,128,84,176);
+        Monster { design: design, map_x: 0, map_y: 0, pv : 10, distance_secu : 64 }
+    }
+
+    pub fn mouvement(&mut self){
+        // algo de mouvement aléatoire 
+    }
+
+    pub fn calculDistance(&mut self,player : &Player){
+        let x = self.design.x - player.design.x;
+        let y  = self.design.y - player.design.y;
+        println!("{0}!!!{1}", &x,&y);
+        let distCarre : f32 = (x*x+y*y) as f32;
+        let dist = (distCarre.sqrt()) as i16;
+        if dist <= self.distance_secu{
+            if x*x<=y*y {
+                if y<0 {
+                    self.design.y +=1;
+                    println!("0");
+                
+                }
+                else {
+                    self.design.y -=1;
+                    println!("1");
+                    
+                }
+            }
+            else if y*y<x*x {
+                if x<0 {
+                    self.design.x +=1;
+                    println!("2");
+                    
+                }
+                else {
+                    self.design.x -=1;
+                    println!("3");
+                    
+                }
+            }
+        }
+
+    }
+}
 
 pub struct HitBox{
+    map_x : i32,
+    map_y : i32,
     vitessex : i8,
     vitessey : i8,
     design : Design,
+    att : i8,
     
     
 }
@@ -690,7 +812,7 @@ pub struct HitBox{
 impl HitBox{
     pub fn new(player : &Player) -> Self{
         let design = Design::new(player.design.x,player.design.y,1,3,0,0,0);
-        let hitbox = HitBox{vitessex : player.facex as i8,vitessey : player.facey as i8, design : design};
+        let hitbox = HitBox{vitessex : player.facex as i8,vitessey : player.facey as i8, design : design, att : 5, map_x : player.map_x, map_y : player.map_y};
         hitbox
     }
 }
