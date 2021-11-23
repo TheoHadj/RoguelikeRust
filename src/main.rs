@@ -215,8 +215,8 @@ fn main()  {
         // }
         
         // METTRE PROJECTCALCUL AILLEURS
+        let mut i = 0;
         'projectilecalcul : for object in &mut listOfProjectile{
-            let mut i = 0;
             let mut blocked = false;
             let mut door = false;
             // println!("X : {0} § Y : {1}", object.design.x, object.design.y);
@@ -248,7 +248,7 @@ fn main()  {
                 }
                 if blocked == true || door == true {
                     listOfElementToRemove.push(i);
-                    // println!("5");
+                    println!("{}", i );
             }
             else {
                 let mut j = 0;
@@ -283,7 +283,7 @@ fn main()  {
 
             i+=1;
         }
-        
+
         for index in listOfElementToRemove{
             listOfProjectile.remove(index as usize);
         }
@@ -298,16 +298,17 @@ fn main()  {
             canvas
                 .with_texture_canvas(&mut texture, |texture_canvas|{
                     texture_canvas.clear();
-                    texture_canvas.set_draw_color(Color::RGB(80,175, 230));
+                    texture_canvas.set_draw_color(Color::RGB(object.design.colour[0], object.design.colour[1], object.design.colour[2]));
                     texture_canvas.fill_rect(Rect::new(0, 0, object.design.width, object.design.height)).unwrap();
     
             }).unwrap();
-            canvas.set_draw_color(Color::RGB(object.design.colour[0], object.design.colour[1], object.design.colour[2]));
+            canvas.set_draw_color(Color::RGB(80,175, 230));
             canvas.copy(&mut texture, None, rect).unwrap();
     
 
         }
-
+        
+        // !!! CHECK LES FONCTIONS DESSINANT PLUSIEURS RECT EN UN APPEL
         for object in &listOfMonster{
             if object.map_x == player.map_x && object.map_y == player.map_y{
 
@@ -765,10 +766,11 @@ impl Monster{
     pub fn calculDistance(&mut self,player : &Player){
         let x = self.design.x - player.design.x;
         let y  = self.design.y - player.design.y;
-        println!("{0}!!!{1}", &x,&y);
         let distCarre : f32 = (x*x+y*y) as f32;
         let dist = (distCarre.sqrt()) as i16;
-        if dist <= self.distance_secu{
+        // println!("{0}!!!{1}",player.design.x, self.design.x);
+        
+        if dist <= self.distance_secu && !((((player.design.x) <= self.design.x && self.design.x <= (player.design.x + player.design.width as i32)) || ((player.design.x) <= (self.design.x + self.design.width as i32 )  && (self.design.x + self.design.width as i32) <= (player.design.x + player.design.width as i32))) && (((player.design.y) <= self.design.y && self.design.y <= (player.design.y + player.design.height as i32)) || ((player.design.y) <= (self.design.y + self.design.height as i32 )  && (self.design.y + self.design.height as i32) <= (player.design.y + player.design.height as i32))) )   {
             if x*x<=y*y {
                 if y<0 {
                     self.design.y +=1;
@@ -792,6 +794,46 @@ impl Monster{
                     println!("3");
                     
                 }
+            }
+        }
+        else if (((player.design.x) <= self.design.x && self.design.x <= (player.design.x + player.design.width as i32)) || ((player.design.x) <= (self.design.x + self.design.width as i32 )  && (self.design.x + self.design.width as i32) <= (player.design.x + player.design.width as i32))) && (((player.design.y) <= self.design.y && self.design.y <= (player.design.y + player.design.height as i32)) || ((player.design.y) <= (self.design.y + self.design.height as i32 )  && (self.design.y + self.design.height as i32) <= (player.design.y + player.design.height as i32))) {
+            if x<0 && y<0{
+                self.design.x -= 5;
+                self.design.y -= 5;
+
+            }
+
+            else if x>0 && y>0{
+                self.design.x += 5;
+                self.design.y += 5;
+            }
+            
+            else if x<0 && y>0{
+                self.design.x -= 5;
+                self.design.y += 5;
+
+            }
+            
+            else if x>0 && y<0{
+                self.design.x += 5;
+                self.design.y -= 5;
+
+            }            
+            
+            else if x<0{
+                self.design.x -= 9;
+            }
+            else if x>1 {
+                self.design.x += 9;
+                
+            }
+            else if y<0 {
+                self.design.y -= 9;
+                
+            }
+            else if y>0 {
+                self.design.y += 9;
+                
             }
         }
 
