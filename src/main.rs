@@ -13,6 +13,7 @@
 // Implémenter le tout en thread 
 //     Après ça j'aurai fais un tour de ce que je peux faire
 
+// Faire le builder
 
 //  LA FN MAIN AVEC LES GRAPHISMES EST DANS GAME 
 
@@ -42,7 +43,6 @@ use sdl2::rect::*;
 use sdl2::video::WindowContext;
 use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::image::{self, LoadTexture, InitFlag};
-use std::string;
 use std::time::Duration;
 
 
@@ -51,7 +51,8 @@ use std::time::Duration;
 
 
 fn main() -> Result<(), String> {
-  
+
+
     let mut game = Game::new(512,512);
     let mut player = Player::new(150, 100, 16, 16);
     // player.addObjectToInventory();
@@ -80,7 +81,9 @@ fn main() -> Result<(), String> {
     let creator = canvas.texture_creator();
     
     let mut event_pump = sdl_context.event_pump()?;
-    let texturePlayer = creator.load_texture("assets/bardo.png")?;
+    let mut texturePlayer = creator.load_texture("assets/bardo.png")?;
+    let mut textureTile = creator.load_texture("assets/darkdimension.png")?;
+    let mut textureMonster = creator.load_texture("assets/reaper.png")?;
     
     let mut listOfProjectile : Vec<HitBox> = Vec::new();
     let mut listOfMonster : Vec<Monster> = Vec::new();
@@ -200,14 +203,29 @@ fn main() -> Result<(), String> {
         }
 
 
-        let mut listDesignTile = game.getDesignFromTile(&player);
+        let mut listDesignTile = game.getDesignAndTileFromTile(&player);
+
         // listDesignTile.push(player.design);
         // let mut texture = player.design.set_texture(&creator);
-        let rectag = Rect::new(0,0, 26,36);
-        let rect = Some(Rect::new(player.design.x,player.design.y, 26, 36));
-        canvas.set_draw_color(Color::RGB(50, 50, 70));
-        canvas.copy(&texturePlayer, None, rect)?;
 
+
+        let (width, height) = canvas.output_size()?;
+
+        let sprite = Rect::new(0,0, 26,36);
+        
+        // let sprite = Rect::new(player.design.x, player.design.y, player.design.width, player.design.width);
+        let pos = Point::new(player.design.x,player.design.y);
+        
+        let screen_rect = Rect::from_center(pos, sprite.width(), sprite.height());
+        canvas.clear();
+            //     .with_texture_canvas(&mut texturePlayer, |texture_canvas|{
+            //         texture_canvas.set_draw_color(Color::RGB(0,0,0));
+            //         texture_canvas.clear();
+            //         // texture_canvas.fill_rect(Rect::new(player.design.x,player.design.y, 26, 36)); // !!!REVOIR CA CARRE DE 400 POUR TEXTURE DE 16 
+    
+            // });
+        canvas.set_draw_color(Color::RGB(50, 50, 70));
+        canvas.copy(&texturePlayer, sprite, screen_rect)?;
 
 
         // listDesignTile.push(monster.design);
@@ -219,14 +237,33 @@ fn main() -> Result<(), String> {
 
         //RENAME TILE EN OBJECT
         // !!! LA FENETRE RAME LORSQUE JE LUI PASSE UNE IMAGE PAR OBJECT (LOGIQUE ?) 
-        for tile in 0..listDesignTile.len(){
+                    // for tile in 0..listDesignTile.len(){
 
-            let mut texture = listDesignTile[tile].set_textureColor(&creator);
-            // let mut texture = creator.load_texture(&listDesignTile[tile].img)?;
-            // let mut texture = creator.load_texture("assets/bardo.png")?;
+                    //     // let mut texture = listDesignTile[tile].set_textureColor(&creator);
+                    //     // let mut texture = creator.load_texture(&listDesignTile[tile].img)?;
+                    //     // let mut texture = creator.load_texture("assets/bardo.png")?;
 
+                    //     let sprite = Rect::new(0,0, listDesignTile[tile].Tile.spritex,listDesignTile[tile].spritey);
+                    //     let rect = Some(Rect::new(listDesignTile[tile].x,listDesignTile[tile].y, listDesignTile[tile].width, listDesignTile[tile].height));
+                    //     // canvas
+                    //     //     .with_texture_canvas(&mut texture, |texture_canvas|{
+                    //     //         texture_canvas.clear();
+                    //     //         // texture_canvas.set_draw_color(Color::RGB(listDesignTile[tile].colour[0],listDesignTile[tile].colour[1], listDesignTile[tile].colour[2]));
+                    //     //         texture_canvas.fill_rect(Rect::new(0, 0, listDesignTile[tile].width, listDesignTile[tile].width)).expect("msg"); // !!!REVOIR CA CARRE DE 400 POUR TEXTURE DE 16 
+                
+                    //     // }).expect("123");
+                    //     canvas.set_draw_color(Color::RGB(50, 50, 70));
+                    //     canvas.copy(&textureTile, None, rect)?;
 
-            let rect = Some(Rect::new(listDesignTile[tile].x,listDesignTile[tile].y, listDesignTile[tile].width, listDesignTile[tile].height));
+                    //     // if tile == (listDesignTile.len() -1){
+                    //     //     player.design = listDesignTile[tile];
+                            
+                    //     // }
+                    // }
+        for (design,tile) in &listDesignTile{
+            let sprite = Rect::new(tile.spritex as i32,tile.spritey as i32, 16, 16);
+            // println!("w{0} h{1} ", tile.spritex, tile.spritey);
+            let rect = Some(Rect::new(design.x,design.y, design.width,design.height));
             // canvas
             //     .with_texture_canvas(&mut texture, |texture_canvas|{
             //         texture_canvas.clear();
@@ -235,12 +272,7 @@ fn main() -> Result<(), String> {
     
             // }).expect("123");
             canvas.set_draw_color(Color::RGB(50, 50, 70));
-            canvas.copy(&mut texture, None, rect)?;
-
-            // if tile == (listDesignTile.len() -1){
-            //     player.design = listDesignTile[tile];
-                
-            // }
+            canvas.copy(&textureTile, sprite, rect)?;
         }
         // player.design = listDesignTile.remove(listDesignTile.len()-1);
         
@@ -310,13 +342,13 @@ fn main() -> Result<(), String> {
                         if (listOfMonster[monster].design.x <= listOfProjectile[object].design.x && listOfProjectile[object].design.x <= (listOfMonster[monster].design.x + listOfMonster[monster].design.width as i32)) && (listOfMonster[monster].design.y <= listOfProjectile[object].design.y && listOfProjectile[object].design.y <= (listOfMonster[monster].design.y + listOfMonster[monster].design.height as i32)){
                             
                             listOfMonster[monster].pv -= listOfProjectile[object].att;
-                            println!("!");
+                            // println!("!");
                             listOfProjectile.remove(object);
                             isAlive = false;
                             
                             if listOfMonster[monster].pv <= 0{
                                 listOfMonster.remove(monster);
-                                println!("||{}||", monster );
+                                // println!("||{}||", monster );
                             
                             }
                             break 'monsterloop;
@@ -375,17 +407,11 @@ fn main() -> Result<(), String> {
         for object in &listOfMonster{
             if object.map_x == player.map_x && object.map_y == player.map_y{
 
-                let mut texture = object.design.set_textureColor(&creator);
-                let rect = Some(Rect::new(object.design.x,object.design.y, object.design.width, object.design.height));
-                canvas
-                    .with_texture_canvas(&mut texture, |texture_canvas|{
-                        texture_canvas.clear();
-                        texture_canvas.set_draw_color(Color::RGB(object.design.colour[0], object.design.colour[1], object.design.colour[2]));
-                        texture_canvas.fill_rect(Rect::new(0, 0, object.design.width, object.design.height)).expect("msg");
-        
-                }).expect("msg");
-                canvas.set_draw_color(Color::RGB(50,50,70));
-                canvas.copy(&mut texture, None, rect)?;
+                let sprite = Rect::new(0,0, 24, 36);
+                let rect = Some(Rect::new(object.design.x,object.design.y, object.design.width,object.design.height));
+            
+                canvas.set_draw_color(Color::RGB(50, 50, 70));
+                canvas.copy(&textureMonster, sprite, rect)?;
             }
     
 
@@ -483,6 +509,8 @@ impl Game{
     pub fn getDesignFromTile(&self, player : &Player) -> Vec<Design>  {
         let mut listDesign = Vec::new();
         let actualMap = &self.map[player.map_x as usize][player.map_y as usize];
+
+        //Replace this by smt with Tile type;
         for x in 0..(self.ROOM_HEIGHT/self.TileHeight) as usize {
             for y in 0..(self.ROOM_WIDTH/self.TileHeight) as usize{
                 if actualMap.tableRoom[x][y].blocked == true{
@@ -492,6 +520,26 @@ impl Game{
                 if actualMap.tableRoom[x][y].door == true{
                     let design =  Design::new((y as i32)*self.TileHeight,(x as i32)*self.TileHeight,self.TileHeight as u32,self.TileHeight as u32,160,160,160, "assets/darkdimension.png".to_string(),32,16);
                     listDesign.push(design);
+                }
+            }
+        }        
+
+        listDesign
+    }
+    pub fn getDesignAndTileFromTile(&self, player : &Player) -> Vec<(Design, Tile)>  {
+        let mut listDesign = Vec::new();
+        let actualMap = &self.map[player.map_x as usize][player.map_y as usize];
+
+        //Replace this by smt with Tile type;
+        for x in 0..(self.ROOM_HEIGHT/self.TileHeight) as usize {
+            for y in 0..(self.ROOM_WIDTH/self.TileHeight) as usize{
+                if actualMap.tableRoom[x][y].blocked == true{
+                    let design =  Design::new((y as i32)*self.TileHeight,(x as i32)*self.TileHeight,self.TileHeight as u32,self.TileHeight as u32,65,20,65, "assets/darkdimension.png".to_string(),128,64);
+                    listDesign.push((design, actualMap.tableRoom[x][y]));
+                }
+                if actualMap.tableRoom[x][y].door == true{
+                    let design =  Design::new((y as i32)*self.TileHeight,(x as i32)*self.TileHeight,self.TileHeight as u32,self.TileHeight as u32,160,160,160, "assets/darkdimension.png".to_string(),32,16);
+                    listDesign.push((design, actualMap.tableRoom[x][y]));
                 }
             }
         }        
@@ -611,6 +659,8 @@ pub struct Tile {
 
     blocked: bool,
     door : bool,
+    spritex : u16,
+    spritey : u16,
     // block_sight: bool,
 }
 
@@ -618,7 +668,9 @@ impl Tile {
     pub fn empty() -> Self {
         Tile {
             blocked: false,
-            door : false
+            door : false,
+            spritex : 0,
+            spritey : 0,
             // block_sight: false,
         }
     }
@@ -626,7 +678,9 @@ impl Tile {
     pub fn wall() -> Self {
         Tile {
             blocked: true,
-            door : false
+            door : false,
+            spritex : 160,
+            spritey : 64,
             // block_sight: true,
         }
     }
@@ -635,6 +689,8 @@ impl Tile {
         Tile {
             blocked: false,
             door : true,
+            spritex : 320,
+            spritey : 44,
             // block_sight: true,
         }
     }
